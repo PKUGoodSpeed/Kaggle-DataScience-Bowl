@@ -1,4 +1,4 @@
-# [Toxic Comment Classification Challenge](https://www.kaggle.com/c/data-science-bowl-2018)
+# [2018 Data Science Bowl](https://www.kaggle.com/c/data-science-bowl-2018)
 
 ### Description:
 #### Spot Nuclei. Speed Cures.
