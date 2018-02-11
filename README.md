@@ -57,9 +57,7 @@ etc...
 4. **All the datasets must be moved to a folder with name "data"**
 5. **All the executable files must be moved to a folder with name "apps”**
 
-**[Discussion paper](https://paper.dropbox.com/doc/New-Ideas-Post-here-bIBrgHTcmLzXW3iNS7OiS)**
-
-**[Word2Vec pretrained models](http://ahogrammer.com/2017/01/20/the-list-of-pretrained-word-embeddings/)**
+**[Discussion paper](https://paper.dropbox.com/doc/Ideas-are-posted-here-7w3BVIEZghSm5cpjjJoo8)**
 
 **[Google Colab free GPU tutorial](https://medium.com/deep-learning-turkey/google-colab-free-gpu-tutorial-e113627b9f5d)**
 
