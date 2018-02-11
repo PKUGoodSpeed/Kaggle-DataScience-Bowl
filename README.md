@@ -1,27 +1,55 @@
-# Toxic Comment Classification Challenge
-**Link:** https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge#description
+# [Toxic Comment Classification Challenge](https://www.kaggle.com/c/data-science-bowl-2018)
 
-**Description:**
-Discussing things you care about can be difficult. The threat of abuse and harassment online means that many people stop expressing themselves and give up on seeking different opinions. Platforms struggle to effectively facilitate conversations, leading many communities to limit or completely shut down user comments.
-The [Conversation AI](https://conversationai.github.io/) team, a research initiative founded by [Jigsaw](https://jigsaw.google.com/) and Google (both a part of Alphabet) are working on tools to help improve online conversation. One area of focus is the study of negative online behaviors, like toxic comments (i.e. comments that are rude, disrespectful or otherwise likely to make someone leave a discussion). So far they’ve built a range of publicly available models served through the [Perspective API](https://perspectiveapi.com/), including toxicity. But the current models still make errors, and they don’t allow users to select which types of toxicity they’re interested in finding (e.g. some platforms may be fine with profanity, but not with other types of toxic content).
-In this competition, you’re challenged to build a multi-headed model that’s capable of detecting different types of of toxicity like threats, obscenity, insults, and identity-based hate better than Perspective’s [current models](https://github.com/conversationai/unintended-ml-bias-analysis). You’ll be using a dataset of comments from Wikipedia’s talk page edits. Improvements to the current model will hopefully help online discussion become more productive and respectful.
+### Description:
+#### Spot Nuclei. Speed Cures.
 
-**Evaluation:**
-Submissions are evaluated on the mean column-wise [log loss](https://www.kaggle.com/wiki/LogLoss). In other words, the score is the average of the log loss of each predicted column.
-**Submission File:**
-For each `id` in the test set, you must predict a probability for each of the six possible types of comment toxicity (toxic, severe_toxic, obscene, threat, insult, identity_hate). The columns must be in the same order as shown below. The file should contain a header and have the following format:
+Imagine speeding up research for almost every disease, from lung cancer and heart disease to rare disorders. The 2018 Data Science Bowl offers our most ambitious mission yet: create an algorithm to automate nucleus detection.
 
-    id,toxic,severe_toxic,obscene,threat,insult,identity_hate
-    6044863,0.5,0.5,0.5,0.5,0.5,0.5
-    6102620,0.5,0.5,0.5,0.5,0.5,0.5
-    etc.
+We’ve all seen people suffer from diseases like cancer, heart disease, chronic obstructive pulmonary disease, Alzheimer’s, and diabetes. Many have seen their loved ones pass away. Think how many lives would be transformed if cures came faster.
+
+By automating nucleus detection, you could help unlock cures faster—from rare disorders to the common cold. Want a snapshot about the 2018 Data Science Bowl? View this video.
+
+#### Why nuclei?
+
+Identifying the cells’ nuclei is the starting point for most analyses because most of the human body’s 30 trillion cells contain a nucleus full of DNA, the genetic code that programs each cell. Identifying nuclei allows researchers to identify each individual cell in a sample, and by measuring how cells react to various treatments, the researcher can understand the underlying biological processes at work.
+
+By participating, teams will work to automate the process of identifying nuclei, which will allow for more efficient drug testing, shortening the 10 years it takes for each new drug to come to market. Check out this video overview to find out more.
+
+#### What will participants do?
+
+Teams will create a computer model that can identify a range of nuclei across varied conditions. By observing patterns, asking questions, and building a model, participants will have a chance to push state-of-the-art technology farther.
+
+Visit DataScienceBowl.com to: 
+• Sign up to receive news about the competition
+• Learn about the history of the Data Science Bowl and past competitions
+• Read our latest insights on emerging analytics techniques
+
+### Evaluation:
+This competition is evaluated on the [mean average precision at different intersection over union (IoU) thresholds](https://www.kaggle.com/c/data-science-bowl-2018#evaluation).
 
 
-**Group name candidates:**  
+### Submission File
+
+In order to reduce the submission file size, our metric uses run-length encoding on the pixel values. Instead of submitting an exhaustive list of indices for your segmentation, you will submit pairs of values that contain a start position and a run length. E.g. '1 3' implies starting at pixel 1 and running a total of 3 pixels (1,2,3).
+
+The competition format requires a space delimited list of pairs. For example, '1 3 10 5' implies pixels 1,2,3,10,11,12,13,14 are to be included in the mask. The pixels are one-indexed and numbered from top to bottom, then left to right: 1 is pixel (1,1), 2 is pixel (2,1), etc.
+
+The metric checks that the pairs are sorted, positive, and the decoded pixel values are not duplicated. It also checks that no two predicted masks for the same image are overlapping.
+
+The file should contain a header and have the following format. Each row in your submission represents a single predicted nucleus segmentation for the given ImageId
+```
+ImageId,EncodedPixels  
+0114f484a16c152baa2d82fdd43740880a762c93f436c8988ac461c5c9dbe7d5,1 1  
+0999dab07b11bc85fb8464fc36c947fbd8b5d6ec49817361cb780659ca805eac,1 1  
+0999dab07b11bc85fb8464fc36c947fbd8b5d6ec49817361cb780659ca805eac,2 3 8 9  
+etc...
+```
+
+### Group name candidates:
 
 - **Phantom Brigade** 
 
-**Group Rule:**
+### Group Rule:
 
 1. **Team members share codes here**
 2. **Every person creates his/her own folder and put codes there.**
