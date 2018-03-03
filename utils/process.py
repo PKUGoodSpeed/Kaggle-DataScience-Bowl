@@ -67,7 +67,7 @@ class ImagePrec:
                 _mask = imread('{0}/{1}/masks/{2}'.format(path, img_id, m))
                 assert _mask.shape == img.shape[:2], "Image shape and mask shape do not match."
                 mask = np.maximum(mask, _mask)
-                mask = mask.astype(np.float32)/mask.max()
+            mask = mask.astype(np.float32)/mask.max()
             self._imgs.append(img)
             self._masks.append(mask)
             if augment:
