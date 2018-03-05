@@ -86,9 +86,10 @@ class ImagePrec:
         print("Time Usage: {0} sec".format(str(time.time() - start_time)))
         print len(self._ids), len(self._imgs), len(self._masks)
 
-    def get_batch_data(self, expand=1, seed=0):
+    def get_batch_data(self, expand=1, seed=None):
         print("Getting cropped images ...")
-        np.random.seed(seed);
+        if seed is not None:
+            np.random.seed(seed)
         start_time = time.time()
         x = []
         y = []
