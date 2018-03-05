@@ -9,13 +9,14 @@ import pandas as pd
 # Image reader
 from skimage.io import imread, imshow, imread_collection, concatenate_images
 from skimage.morphology import label
+from skimage import morphology
 
 # Using multiprocessing
 from multiprocessing import Pool
 
 class TestModel:
     def predict(self, A):
-        return A[:, :, 0]
+        return A[:, :, :, 0]
 
 def _run_length_encoding(x, threshold):
     dots = np.where(x.T.flatten() >= threshold)[0]
@@ -26,6 +27,51 @@ def _run_length_encoding(x, threshold):
         run_lengths[-1] += 1
         prev = b
     return ' '.join([str(y) for y in run_lengths])
+
+def rle_encoding(x):
+    dots = np.where(x.T.flatten() == 1)[0]
+    run_lengths = []
+    prev = -2
+    for b in dots:
+        if (b>prev+1): run_lengths.extend((b + 1, 0))
+        run_lengths[-1] += 1
+        prev = b
+    return run_lengths
+
+def rle_decode(mask_rle, shape):
+    '''
+    mask_rle: run-length as string formated (start length)
+    shape: (height,width) of array to return 
+    Returns numpy array, 1 - mask, 0 - background
+
+    '''
+    if type(mask_rle) == str:
+        s = mask_rle.split()
+    else:
+        s = mask_rle
+    starts, lengths = [np.asarray(x, dtype=int) for x in (s[0:][::2], s[1:][::2])]
+    starts -= 1
+    ends = starts + lengths
+    img = np.zeros(shape[0]*shape[1], dtype=np.uint8)
+    for lo, hi in zip(starts, ends):
+        img[lo:hi] = 1
+    return img.reshape(shape).T
+
+def prob_to_rles(x, cutoff=0.5, debug=False, dilation=False):
+    lab_img = morphology.label(x > cutoff) # split of components goes here
+    if debug:
+        plt.imshow(lab_img)
+        plt.show() 
+        lab_img2=lab_img
+    if dilation:
+        for i in range(1, lab_img.max() + 1):    
+            lab_img = np.maximum(lab_img, ndimage.morphology.binary_dilation(lab_img==i)*i)
+        if debug:
+            plt.imshow(lab_img)
+            plt.show()    
+    for i in range(1, lab_img.max() + 1):
+        img = lab_img == i
+        yield rle_encoding(img)
 
 class ImagePrec:
     _size = None
@@ -138,7 +184,7 @@ class ImagePrec:
                 for i in range(0, img.shape[0], stride)
                 for j in range(0, img.shape[1], stride)
             ]
-            test_batch = model.predict(np.array([img[:, :, 0][i: i+self._size, j: j+self._size] for i, j in coordinates]))
+            test_batch = model.predict(np.array([img[i: i+self._size, j: j+self._size] for i, j in coordinates]))
             mask = np.zeros(img.shape[:2])
             ratio = np.zeros(img.shape[:2])
             for (i, j), _mask in zip(coordinates, test_batch):
@@ -148,13 +194,17 @@ class ImagePrec:
         print("Time Usage: {0} sec".format(str(time.time() - start_time)))
         return self._test_masks
 
-    def encoding(self, threshold=0.5):
-        print "Generating submission ..."
-        assert len(self._test_ids) == len(self._test_masks), "Something is wrong!"
-        return pd.DataFrame({
-            "ImageId": self._test_ids,
-            "EncodedPixels": [_run_length_encoding(x, threshold) for x in self._test_masks]
-        })[["ImageId", "EncodedPixels"]]
+    def encoding(self, threshold=0.5, dilation=False):
+        new_test_ids = []
+        rles = []
+        for id_, pred_mask in zip(self._test_ids, self._test_masks):
+            rle = list(prob_to_rles(pred_mask, cutoff=threshold, dilation=dilation))
+            rles.extend(rle)
+            new_test_ids.extend([id_] * len(rle))
+        sub = pd.DataFrame()
+        sub['ImageId'] = new_test_ids
+        sub['EncodedPixels'] = pd.Series(rles).apply(lambda x: ' '.join(str(y) for y in x))
+        return sub
 
 if __name__ == '__main__':
     ip = ImagePrec(size=128, channel=3, normalize=True, augment=True)
