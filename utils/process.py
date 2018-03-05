@@ -15,7 +15,7 @@ from multiprocessing import Pool
 
 class TestModel:
     def predict(self, A):
-        return A[:, :, 0]
+        return A[:, :, :, 0]
 
 def _run_length_encoding(x, threshold):
     dots = np.where(x.T.flatten() >= threshold)[0]
@@ -138,7 +138,7 @@ class ImagePrec:
                 for i in range(0, img.shape[0], stride)
                 for j in range(0, img.shape[1], stride)
             ]
-            test_batch = model.predict(np.array([img[:, :, 0][i: i+self._size, j: j+self._size] for i, j in coordinates]))
+            test_batch = model.predict(np.array([img[i: i+self._size, j: j+self._size] for i, j in coordinates]))
             mask = np.zeros(img.shape[:2])
             ratio = np.zeros(img.shape[:2])
             for (i, j), _mask in zip(coordinates, test_batch):
