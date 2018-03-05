@@ -194,11 +194,11 @@ class ImagePrec:
         print("Time Usage: {0} sec".format(str(time.time() - start_time)))
         return self._test_masks
 
-    def encoding(self, threshold=0.5):
+    def encoding(self, threshold=0.5, dilation=False):
         new_test_ids = []
         rles = []
         for id_, pred_mask in zip(self._test_ids, self._test_masks):
-            rle = list(prob_to_rles(pred_mask, cutoff=threshold))
+            rle = list(prob_to_rles(pred_mask, cutoff=threshold, dilation=dilation))
             rles.extend(rle)
             new_test_ids.extend([id_] * len(rle))
         sub = pd.DataFrame()
