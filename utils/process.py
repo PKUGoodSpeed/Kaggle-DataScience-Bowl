@@ -14,6 +14,10 @@ from skimage import morphology
 # Using multiprocessing
 from multiprocessing import Pool
 
+# Visualization for checking results
+import matplotlib.pyplot as plt
+plt.switch_backend('agg')
+
 class TestModel:
     def predict(self, A):
         return A[:, :, :, 0]
@@ -193,6 +197,33 @@ class ImagePrec:
             self._test_masks.append(mask.astype(np.float32)/ratio.astype(np.float32))
         print("Time Usage: {0} sec".format(str(time.time() - start_time)))
         return self._test_masks
+        
+    def check_results(self, path="./output", threshold=0.5):
+        """ Check how good the predictions are """
+        idx = np.array([np.random.randint(len(self._test_imgs)) for i in range(9)])
+        imgs = [self._test_imgs[i] for i in idx]
+        masks = [(self._test_masks[i]>threshold) for i in idx]
+        
+        if not os.path.exists(path):
+            os.system("mkdir {0}".format(path))
+        
+        fig, axes = plt.subplots(3, 3, figsize = (12, 12))
+        fig.subplots_adjust(hspace = 0.3, wspace = 0.3)
+        for i, ax in enumerate(axes.flat):
+            ax.imshow(imgs[i])
+            ax.set_xticks([])
+            ax.set_yticks([])
+        plt.savefig(path+"/imgs.png")
+        print("Images are show in {0}/imgs.png".format(path))
+        
+        fig, axes = plt.subplots(3, 3, figsize = (12, 12))
+        fig.subplots_adjust(hspace = 0.3, wspace = 0.3)
+        for i, ax in enumerate(axes.flat):
+            ax.imshow(masks[i])
+            ax.set_xticks([])
+            ax.set_yticks([])
+        plt.savefig(path+"/masks.png")
+        print("Masks are show in {0}/masks.png".format(path))
 
     def encoding(self, threshold=0.5, dilation=False):
         new_test_ids = []
@@ -215,3 +246,4 @@ if __name__ == '__main__':
     masks = ip.predict(model, stride=16)
     sub = ip.encoding(threshold=0.)
     sub.to_csv('test.csv', index=False)
+    ip.check_results()

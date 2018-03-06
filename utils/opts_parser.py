@@ -13,7 +13,8 @@ def _getopts(argv):
 def getopts():
     from sys import argv
     args = _getopts(argv)
-    assert '--config' in args, "No config file"
-    config_file = args['--config']
-    cfg = json.load(open(config_file))
-    return cfg
+    assert '--p' in args, "No param config file"
+    params = json.load(open(args['--p']))
+    assert '--m' in args, "No model config file"
+    model_params = json.load(open(args['--m']))
+    return params, model_params
