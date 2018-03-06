@@ -9,6 +9,7 @@ import pandas as pd
 # Image reader
 from skimage.io import imread, imshow, imread_collection, concatenate_images
 from skimage.morphology import label
+from skimage.transform import resize
 from skimage import morphology
 
 # Using multiprocessing
@@ -117,7 +118,7 @@ class ImagePrec:
                 _mask = imread('{0}/{1}/masks/{2}'.format(path, img_id, m))
                 assert _mask.shape == img.shape[:2], "Image shape and mask shape do not match."
                 mask = np.maximum(mask, _mask)
-            mask = mask.astype(np.float32)/mask.max()
+            mask = mask.astype(np.bool)
             self._imgs.append(img)
             self._masks.append(mask)
             if augment:
@@ -140,7 +141,6 @@ class ImagePrec:
         print("Getting cropped images ...")
         if seed is not None:
             np.random.seed(seed)
-        start_time = time.time()
         x = []
         y = []
         for img, mask in zip(self._imgs, self._masks):
@@ -150,10 +150,16 @@ class ImagePrec:
                 j = np.random.randint(img.shape[1] - self._size + 1)
                 x.append(img[i: i+self._size, j: j+self._size])
                 y.append(mask[i: i+self._size, j: j+self._size])
-        print("Time Usage: {0} sec".format(str(time.time() - start_time)))
         return {
             "x": np.array(x),
             "y": np.array(y)
+        }
+    
+    def get_batch_resized(self):
+        print("Getting resized images ...")
+        return{
+            'x': np.array([resize(img, (self._size, self._size), mode='constant', preserve_range=True) for img in self._imgs]),
+            'y': np.array([resize(mask, (self._size, self._size), mode='constant', preserve_range=True) for mask in self._masks])
         }
 
     def get_test_set(self, path='../data/test', normalize=False):
@@ -195,6 +201,19 @@ class ImagePrec:
                 mask[i: i+self._size, j: j+self._size] += _mask
                 ratio[i: i+self._size, j: j+self._size] += np.ones((self._size, self._size))
             self._test_masks.append(mask.astype(np.float32)/ratio.astype(np.float32))
+        print("Time Usage: {0} sec".format(str(time.time() - start_time)))
+        return self._test_masks
+    
+    def predict_resized(self, model):
+        """
+        Generate the probability map
+        """
+        print "Getting predictions for resized input ..."
+        start_time = time.time()
+        test_X = np.array([resize(img, (self._size, self._size), mode='constant', preserve_range=True) for img in self.__test_imgs])
+        test_Y = model.predict(test_X)
+        for pred, img in zip(test_Y, self._test_imgs):
+            self._test_masks.append(resize(pred, (img.shape[0], img.shape[1]), mode='constant', preserve_range=True))
         print("Time Usage: {0} sec".format(str(time.time() - start_time)))
         return self._test_masks
         
