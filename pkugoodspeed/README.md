@@ -15,7 +15,7 @@ The `params.cfg` contains basic information:
 - `normalize`: whether do normalization or not
 - `expand`: how many random crops for each original image
 
-####### `params.cfg` example:
+###### `params.cfg` example:
 ```
 {
     "train_path": "/home/zebo/git/myRep/Kaggle/Kaggle-DataScience-Bowl/data/train",
@@ -38,7 +38,7 @@ The `model.cfg` contains the model information:
   - `conv_list`: the arguments for convolutional layers
   - `revt_list`: the arguments for up/reverse convolutional layers
 
-####### `model.cfg` example:
+###### `model.cfg` example:
 ```
 {
     "model_name": "unet-test",
@@ -105,3 +105,9 @@ The `model.cfg` contains the model information:
     ]
 }
 ```
+
+##### Modules:
+
+- preprocessing code and postprocessing code are in [`utils/process.py`](https://github.com/PKUGoodSpeed/Kaggle-DataScience-Bowl/blob/master/utils/process.py)
+- model modules are in [`pkugoodspeed/models/`](https://github.com/PKUGoodSpeed/Kaggle-DataScience-Bowl/tree/master/pkugoodspeed/models)
+- main functions' are in [`pkugoodspeed/src/`](https://github.com/PKUGoodSpeed/Kaggle-DataScience-Bowl/tree/master/pkugoodspeed/src)
