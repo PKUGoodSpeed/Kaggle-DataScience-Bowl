@@ -25,9 +25,9 @@ if __name__ == '__main__':
         batch = ip.get_batch_data(expand=params["expand"], seed=None)
         un.fit(batch["x"], batch["y"], learning_rate=lr, epochs=model_params['epochs'], check_file=model_name+"_check.h5")
         lr *= dr
+    print("\n\n===================== Training finished. =====================\n")
     model_file_path = "./checkpoints/" + model_name + "_check.h5"
     un.load_model(model_file_path)
-    print("\n\n===================== Training finished. =====================\n")
     
     print("\n===================== Making predictions ... =====================\n\n")
     ip.get_test_set(path=params["test_path"], normalize=params["normalize"])
