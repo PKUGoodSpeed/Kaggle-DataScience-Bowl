@@ -22,8 +22,8 @@ if __name__ == '__main__':
     N_iter = model_params["iterations"]
     model_name = model_params["model_name"]
     for _ in range(N_iter):
-        # batch = ip.get_batch_data(expand=params["expand"], seed=None)
-        batch = ip.get_batch_resized()
+        batch = ip.get_batch_data(expand=params["expand"], seed=None)
+        # batch = ip.get_batch_resized()
         print batch["x"].shape
         print batch["y"].shape
         un.fit(batch["x"], batch["y"], learning_rate=lr, epochs=model_params['epochs'], check_file=model_name+"_check.h5")

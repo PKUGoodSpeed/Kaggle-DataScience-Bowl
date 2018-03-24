@@ -90,7 +90,7 @@ class ImagePrec:
     _test_ids = None
     _test_masks = None
 
-    def __init__(self, path='../data/train', size=128, channel=3, normalize=False, augment=False):
+    def __init__(self, path='../data/train', size=128, channel=3, normalize=False):
         """
         It looks that the minimum size of images is (256, 256)
         The channel of the input images are all 4, but only the first 3 matters.
@@ -101,6 +101,7 @@ class ImagePrec:
         self._imgs = []
         self._ids = []
         self._masks = []
+        self._n = 0
         
         print("Extracting training image info ...")
         start_time = time.time()
@@ -121,46 +122,58 @@ class ImagePrec:
             mask = mask.astype(np.bool)
             self._imgs.append(img)
             self._masks.append(mask)
-            if augment:
-                self._ids.append(img_id)
-                self._imgs.append(np.flipud(img))
-                self._masks.append(np.flipud(mask))
-                for rot in range(3):
-                    img = np.rot90(img)
-                    mask = np.rot90(mask)
-                    self._ids.append(img_id)
-                    self._ids.append(img_id)
-                    self._imgs.append(img)
-                    self._masks.append(mask)
-                    self._imgs.append(np.flipud(img))
-                    self._masks.append(np.flipud(mask))
+            self._ids.append(img_id)
+        self._n = len(self._imgs)
+            
         print("Time Usage: {0} sec".format(str(time.time() - start_time)))
         print len(self._ids), len(self._imgs), len(self._masks)
+    
+    def get_num(self):
+        return self._n
+    
+    def get_ids(self):
+        return self._ids
 
-    def get_batch_data(self, expand=1, seed=None):
+    def get_batch_cropped(self, train_idx, expand=1):
         print("Getting cropped images ...")
-        if seed is not None:
-            np.random.seed(seed)
-        x = []
-        y = []
-        for img, mask in zip(self._imgs, self._masks):
+        train_x = []
+        train_y = []
+        img_set = [self._imgs[i] for i in train_idx]
+        mask_set = [self._masks[i] for i in train_idx]
+        for img, mask in zip(img_set, mask_set):
             assert img.shape[0]>=self._size and img.shape[1]>=self._size, "There exist images whose size is smaller than cropped size"
             for k in range(expand):
                 i = np.random.randint(img.shape[0] - self._size + 1)
                 j = np.random.randint(img.shape[1] - self._size + 1)
                 x.append(img[i: i+self._size, j: j+self._size])
                 y.append(mask[i: i+self._size, j: j+self._size])
-        return {
-            "x": np.array(x),
-            "y": np.array(y)
-        }
+        return np.array(x), np.array(y)
     
-    def get_batch_resized(self):
+    def get_batch_resized(self, train_idx):
         print("Getting resized images ...")
-        return{
-            'x': np.array([resize(img, (self._size, self._size), mode='constant', preserve_range=True) for img in self._imgs]),
-            'y': np.array([resize(mask, (self._size, self._size), mode='constant', preserve_range=True) for mask in self._masks])
-        }
+        train_x = np.array([resize(self._imgs[i], (self._size, self._size), mode='constant', preserve_range=True) for i in train_idx])
+        train_y = np.array([resize(self._masks[i], (self._size, self._size), mode='constant', preserve_range=True) for i in train_idx])
+        return train_x, train_y
+    
+    def augment(self, tr_x, tr_y):
+        x_list = [tr_x]
+        y_list = [tr_y]
+        for _ in range(3):
+            x_list.append(np.array([np.rot90(img_) for img_ in x_list[-1]]))
+            y_list.append(np.array([np.rot90(mask_) for mask_ in x_list[-1]]))
+        for i in range(4):
+            x_list.append(np.array([np.flipud(img_) for img_ in x_list[i]]))
+            y_list.append(np.array([np.flipud(mask_) for mask_ in x_list[i]]))
+        x = np.concatenate(x_list)
+        y = np.concatenate(y_list)
+        return x, y
+    
+    def get_valid_set(self, valid_idx):
+        print("Extracting validation image info ...")
+        self._test_ids = [self._ids[i] for i in valid_idx]
+        self._test_imgs = [self._imgs[i] for i in valid_idx]
+        print("Time Usage: {0} sec".format(str(time.time() - start_time)))
+        print len(self._test_ids), len(self._test_imgs)
 
     def get_test_set(self, path='../data/test', normalize=False):
         self._test_ids = []
@@ -255,14 +268,3 @@ class ImagePrec:
         sub['ImageId'] = new_test_ids
         sub['EncodedPixels'] = pd.Series(rles).apply(lambda x: ' '.join(str(y) for y in x))
         return sub
-
-if __name__ == '__main__':
-    ip = ImagePrec(size=128, channel=3, normalize=True, augment=True)
-    train = ip.get_batch_data(expand=16, seed=17)
-    print train['x'].shape, train['y'].shape
-    model = TestModel()
-    ip.get_test_set(normalize=True)
-    masks = ip.predict(model, stride=16)
-    sub = ip.encoding(threshold=0.)
-    sub.to_csv('test.csv', index=False)
-    ip.check_results()
