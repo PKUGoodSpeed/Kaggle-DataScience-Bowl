@@ -62,18 +62,11 @@ def rle_decode(mask_rle, shape):
         img[lo:hi] = 1
     return img.reshape(shape).T
 
-def prob_to_rles(x, cutoff=0.5, debug=False, dilation=False):
+def prob_to_rles(x, cutoff=0.5, dilation=False):
     lab_img = morphology.label(x > cutoff) # split of components goes here
-    if debug:
-        plt.imshow(lab_img)
-        plt.show() 
-        lab_img2=lab_img
     if dilation:
         for i in range(1, lab_img.max() + 1):    
             lab_img = np.maximum(lab_img, ndimage.morphology.binary_dilation(lab_img==i)*i)
-        if debug:
-            plt.imshow(lab_img)
-            plt.show()    
     for i in range(1, lab_img.max() + 1):
         img = lab_img == i
         yield rle_encoding(img)
@@ -236,8 +229,15 @@ class ImagePrec:
         return self._test_masks
 
     def save_predictions(self, path='data/predictions'):
+        """
+        Saving OOF features and test predictions
+        """
         print("Saving predictions ...")
-        
+        if not os.path.exists(path):
+            os.makedirs(path)
+        for idx, pred in zip(self._test_ids, self._test_masks):
+            filename = idx + ".png"
+            imsave(filename, pred)
         
     def check_results(self, path="./output", threshold=0.5):
         """ Check how good the predictions are """
