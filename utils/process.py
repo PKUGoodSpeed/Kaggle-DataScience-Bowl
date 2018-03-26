@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 # Image reader
-from skimage.io import imread, imshow, imread_collection, concatenate_images
+from skimage.io import imread, imshow, imread_collection, concatenate_images, imsave
 from skimage.morphology import label
 from skimage.transform import resize
 from skimage import morphology
@@ -90,7 +90,7 @@ class ImagePrec:
     _test_ids = None
     _test_masks = None
 
-    def __init__(self, path='../data/train', size=128, channel=3, normalize=False):
+    def __init__(self, path='../data/train', size=128, channel=3, normalize=True):
         """
         It looks that the minimum size of images is (256, 256)
         The channel of the input images are all 4, but only the first 3 matters.
@@ -116,13 +116,12 @@ class ImagePrec:
                 img = (img.astype(np.float32) - img.mean())/max(1., img.std())
             mask = np.zeros(img.shape[:2])
             for m in os.listdir('{0}/{1}/masks'.format(path, img_id)):
-                _mask = imread('{0}/{1}/masks/{2}'.format(path, img_id, m))
-                assert _mask.shape == img.shape[:2], "Image shape and mask shape do not match."
-                mask = np.maximum(mask, _mask)
+                mask_ = imread('{0}/{1}/masks/{2}'.format(path, img_id, m))
+                assert mask_.shape == img.shape[:2], "Image shape and mask shape do not match."
+                mask = np.maximum(mask, mask_)
             mask = mask.astype(np.bool)
             self._imgs.append(img)
-            self._masks.append(mask)
-            self._ids.append(img_id)
+            self._masks.append(mask.astype(np.float32))
         self._n = len(self._imgs)
             
         print("Time Usage: {0} sec".format(str(time.time() - start_time)))
@@ -136,8 +135,8 @@ class ImagePrec:
 
     def get_batch_cropped(self, train_idx, expand=1):
         print("Getting cropped images ...")
-        train_x = []
-        train_y = []
+        x = []
+        y = []
         img_set = [self._imgs[i] for i in train_idx]
         mask_set = [self._masks[i] for i in train_idx]
         for img, mask in zip(img_set, mask_set):
@@ -152,7 +151,8 @@ class ImagePrec:
     def get_batch_resized(self, train_idx):
         print("Getting resized images ...")
         train_x = np.array([resize(self._imgs[i], (self._size, self._size), mode='constant', preserve_range=True) for i in train_idx])
-        train_y = np.array([resize(self._masks[i], (self._size, self._size), mode='constant', preserve_range=True) for i in train_idx])
+        tmp_y = np.array([resize(self._masks[i], (self._size, self._size), mode='constant', preserve_range=True) for i in train_idx])
+        train_y = np.array([(mask_ >= 0.5).astype(np.float32) for mask_ in tmp_y])
         return train_x, train_y
     
     def augment(self, tr_x, tr_y):
@@ -160,16 +160,20 @@ class ImagePrec:
         y_list = [tr_y]
         for _ in range(3):
             x_list.append(np.array([np.rot90(img_) for img_ in x_list[-1]]))
-            y_list.append(np.array([np.rot90(mask_) for mask_ in x_list[-1]]))
+            y_list.append(np.array([np.rot90(mask_) for mask_ in y_list[-1]]))
         for i in range(4):
             x_list.append(np.array([np.flipud(img_) for img_ in x_list[i]]))
-            y_list.append(np.array([np.flipud(mask_) for mask_ in x_list[i]]))
+            y_list.append(np.array([np.flipud(mask_) for mask_ in y_list[i]]))
         x = np.concatenate(x_list)
         y = np.concatenate(y_list)
         return x, y
     
     def get_valid_set(self, valid_idx):
+        self._test_ids = []
+        self._test_imgs = []
+        
         print("Extracting validation image info ...")
+        start_time = time.time()
         self._test_ids = [self._ids[i] for i in valid_idx]
         self._test_imgs = [self._imgs[i] for i in valid_idx]
         print("Time Usage: {0} sec".format(str(time.time() - start_time)))
@@ -223,12 +227,17 @@ class ImagePrec:
         """
         print "Getting predictions for resized input ..."
         start_time = time.time()
-        test_X = np.array([resize(img, (self._size, self._size), mode='constant', preserve_range=True) for img in self.__test_imgs])
+        self._test_masks = []
+        test_X = np.array([resize(img, (self._size, self._size), mode='constant', preserve_range=True) for img in self._test_imgs])
         test_Y = model.predict(test_X)
         for pred, img in zip(test_Y, self._test_imgs):
             self._test_masks.append(resize(pred, (img.shape[0], img.shape[1]), mode='constant', preserve_range=True))
         print("Time Usage: {0} sec".format(str(time.time() - start_time)))
         return self._test_masks
+
+    def save_predictions(self, path='data/predictions'):
+        print("Saving predictions ...")
+        
         
     def check_results(self, path="./output", threshold=0.5):
         """ Check how good the predictions are """
