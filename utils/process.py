@@ -83,7 +83,7 @@ class ImagePrec:
     _test_ids = None
     _test_masks = None
 
-    def __init__(self, path='../data/train', size=128, channel=3, normalize=True):
+    def __init__(self, path='../data/train', size=128, channel=3, normalize=0):
         """
         It looks that the minimum size of images is (256, 256)
         The channel of the input images are all 4, but only the first 3 matters.
@@ -104,9 +104,12 @@ class ImagePrec:
             assert len(img_file_list) == 1, "Multiple images found in one images id folder."
             assert img_file_list[0] == img_id + '.png', "Image id and image name do not match."
             img = imread('{0}/{1}/images/{1}.png'.format(path, img_id, img_id))[:, :, :channel]
-            if normalize:
-                ## Do normalization
+            ## Do normalization
+            if normalize==1:
                 img = (img.astype(np.float32) - img.mean())/max(1., img.std())
+            elif normalize > 1:
+                img = img.astype(np.float32)/normalize
+                
             mask = np.zeros(img.shape[:2])
             for m in os.listdir('{0}/{1}/masks'.format(path, img_id)):
                 mask_ = imread('{0}/{1}/masks/{2}'.format(path, img_id, m))
@@ -172,7 +175,7 @@ class ImagePrec:
         print("Time Usage: {0} sec".format(str(time.time() - start_time)))
         print len(self._test_ids), len(self._test_imgs)
 
-    def get_test_set(self, path='../data/test', normalize=False):
+    def get_test_set(self, path='../data/test', normalize=0):
         self._test_ids = []
         self._test_imgs = []
         
@@ -184,9 +187,11 @@ class ImagePrec:
             assert len(img_file_list) == 1, "Multiple images found in one images id folder."
             assert img_file_list[0] == img_id + '.png', "Image id and image name do not match."
             img = imread('{0}/{1}/images/{1}.png'.format(path, img_id, img_id))[:, :, :self._channel]
-            if normalize:
-                ## Do normalization
+            ## Do normalization
+            if normalize == 1:
                 img = (img.astype(np.float32) - img.mean())/max(1., img.std())
+            elif normalize > 1:
+                img = img.astype(np.float32)/normalize
             self._test_imgs.append(img)
         print("Time Usage: {0} sec".format(str(time.time() - start_time)))
         print len(self._test_ids), len(self._test_imgs)
