@@ -5,14 +5,13 @@ from keras.optimizers import SGD, Adam
 from keras.callbacks import LearningRateScheduler, Callback, EarlyStopping, ModelCheckpoint
 from keras.layers import Input, Conv2D, Conv2DTranspose, Activation, Dropout, Reshape
 from keras.layers import MaxPooling2D, AveragePooling2D, concatenate
-from keras.layers.core import Lambda
 from model_utils import *
 
 
 global_learning_rate = 0.01
 global_decaying_rate = 0.92
 
-class UNet:
+class ResNet:
     _input_shape = (256, 256, 3)
     _output_shape = (256, 256)
     _model = None
@@ -29,35 +28,44 @@ class UNet:
         dropout_ratio = initial_dropout
         tmp = in_layer
         conv = []
-        drops = []
-        for i in range(depth):
+        pool = []
+        revt = []
+        for _ in range(depth):
             tmp = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation,
             kernel_initializer='he_normal', strides=1, padding="same") (tmp)
-            tmp = Dropout(dropout_ratio) (tmp)
-            tmp = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation,
+            tmp = Dropout(c["dropout"]) (tmp)
+            tmp = Conv2D(filters=c["filters"], kernel_size=c["kernel_size"], activation="elu",
             kernel_initializer='he_normal', strides=1, padding="same") (tmp)
-            tmp = Dropout(dropout_ratio) (tmp)
+            conv.append(tmp)
             if i < depth-1:
-                drops.append(dropout_ratio)
-                dropout_ratio = min(dropout_ratio*1.7, 0.4)
-                conv.append(tmp)
                 tmp = MaxPooling2D((2, 2)) (tmp)
-                n_channel *= 2
+            ## tmp = AveragePooling2D((2, 2)) (tmp)
         
-        for i in range(1, depth):
-            n_channel /= 2
-            tmp = Conv2DTranspose(filters=n_channel, kernel_size=k_size, strides=(2, 2),
+        for i, r in enumerate(revt_list):
+            tmp = Conv2DTranspose(filters=r["filters"], kernel_size=r["kernel_size"], strides=(2, 2),
             padding="same") (tmp)
-            tmp = concatenate([tmp, conv[-i]])
-            tmp = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation,
+            tmp = concatenate([tmp, conv[depth-i-2]])
+            tmp = Conv2D(filters=r["cfilters"], kernel_size=r["ckernel_size"], activation="elu",
             kernel_initializer='he_normal', strides=1, padding="same") (tmp)
-            tmp = Dropout(drops[-i]) (tmp)
-            tmp = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation,
+            tmp = Dropout(r["dropout"]) (tmp)
+            tmp = Conv2D(filters=r["cfilters"], kernel_size=r["ckernel_size"], activation="elu",
             kernel_initializer='he_normal', strides=1, padding="same") (tmp)
-            tmp = Dropout(drops[-i]) (tmp)
+        
+        out_layer = Reshape(self._output_shape) (Conv2D(1, (1,1), activation="sigmoid") (tmp))
+        
+        comb = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation, 
+        kernel_initializer='he_normal', strides=1, padding="same") (in_layer)
+        
+        for _ in range(depth):
+            drop = Dropout(dropout_ratio) (comb)
+            conv = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation, 
+            kernel_initializer='he_normal', strides=1, padding="same") (drop)
+            comb = concatenate([comb, conv])
+            n_channel *= 2
+            dropout_ratio = min(dropout_ratio*2, 0.6)
         
         out_layer = Conv2D(filters=1, kernel_size=smooth, activation='sigmoid', 
-        strides=1, padding="same") (tmp)
+        strides=1, padding="same") (comb)
         out_layer = Reshape(self._output_shape) (out_layer)
 
         # construct model
