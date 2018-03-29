@@ -5,13 +5,14 @@ from keras.optimizers import SGD, Adam
 from keras.callbacks import LearningRateScheduler, Callback, EarlyStopping, ModelCheckpoint
 from keras.layers import Input, Conv2D, Conv2DTranspose, Activation, Dropout, Reshape
 from keras.layers import MaxPooling2D, AveragePooling2D, concatenate
+from keras.layers.core import Lambda
 from model_utils import *
 
 
 global_learning_rate = 0.01
 global_decaying_rate = 0.92
 
-class ResNet:
+class UResNet:
     _input_shape = (256, 256, 3)
     _output_shape = (256, 256)
     _model = None
@@ -28,44 +29,37 @@ class ResNet:
         dropout_ratio = initial_dropout
         tmp = in_layer
         conv = []
-        pool = []
-        revt = []
-        for _ in range(depth):
+        drops = []
+        for i in range(depth):
+            tmp1 = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation,
+            kernel_initializer='he_normal', strides=1, padding="same") (tmp)
+            tmp1 = Dropout(dropout_ratio) (tmp1)
+            tmp = concatenate([tmp, tmp1])
             tmp = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation,
             kernel_initializer='he_normal', strides=1, padding="same") (tmp)
-            tmp = Dropout(c["dropout"]) (tmp)
-            tmp = Conv2D(filters=c["filters"], kernel_size=c["kernel_size"], activation="elu",
-            kernel_initializer='he_normal', strides=1, padding="same") (tmp)
-            conv.append(tmp)
+            tmp = Dropout(dropout_ratio) (tmp)
             if i < depth-1:
+                drops.append(dropout_ratio)
+                dropout_ratio = min(dropout_ratio*1.7, 0.4)
+                conv.append(tmp)
                 tmp = MaxPooling2D((2, 2)) (tmp)
-            ## tmp = AveragePooling2D((2, 2)) (tmp)
+                n_channel *= 2
         
-        for i, r in enumerate(revt_list):
-            tmp = Conv2DTranspose(filters=r["filters"], kernel_size=r["kernel_size"], strides=(2, 2),
+        for i in range(1, depth):
+            n_channel /= 2
+            tmp = Conv2DTranspose(filters=n_channel, kernel_size=(2, 2), strides=(2, 2),
             padding="same") (tmp)
-            tmp = concatenate([tmp, conv[depth-i-2]])
-            tmp = Conv2D(filters=r["cfilters"], kernel_size=r["ckernel_size"], activation="elu",
+            tmp = concatenate([tmp, conv[-i]])
+            tmp1 = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation,
             kernel_initializer='he_normal', strides=1, padding="same") (tmp)
-            tmp = Dropout(r["dropout"]) (tmp)
-            tmp = Conv2D(filters=r["cfilters"], kernel_size=r["ckernel_size"], activation="elu",
+            tmp = Dropout(drops[-i]) (tmp1)
+            tmp = concatenate([tmp, tmp1])
+            tmp = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation,
             kernel_initializer='he_normal', strides=1, padding="same") (tmp)
-        
-        out_layer = Reshape(self._output_shape) (Conv2D(1, (1,1), activation="sigmoid") (tmp))
-        
-        comb = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation, 
-        kernel_initializer='he_normal', strides=1, padding="same") (in_layer)
-        
-        for _ in range(depth):
-            drop = Dropout(dropout_ratio) (comb)
-            conv = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation, 
-            kernel_initializer='he_normal', strides=1, padding="same") (drop)
-            comb = concatenate([comb, conv])
-            n_channel *= 2
-            dropout_ratio = min(dropout_ratio*2, 0.6)
+            tmp = Dropout(drops[-i]) (tmp)
         
         out_layer = Conv2D(filters=1, kernel_size=smooth, activation='sigmoid', 
-        strides=1, padding="same") (comb)
+        strides=1, padding="same") (tmp)
         out_layer = Reshape(self._output_shape) (out_layer)
 
         # construct model
@@ -99,7 +93,7 @@ class ResNet:
         checkpointer = ModelCheckpoint(filepath='./checkpoints/'+check_file, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
         
         history = self._model.fit(x, y, batch_size=32, epochs=epochs, verbose=1,
-        validation_split=0.1, callbacks=[earlystopper, checkpointer, change_lr])
+        validation_split=0.1, callbacks=[checkpointer, change_lr])
         ## self._model.load_weights("./checkpointer/" + check_file)
         return history
 

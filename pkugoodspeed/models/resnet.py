@@ -73,7 +73,7 @@ class ResNet:
         checkpointer = ModelCheckpoint(filepath='./checkpoints/'+check_file, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
         
         history = self._model.fit(x, y, batch_size=32, epochs=epochs, verbose=1,
-        validation_split=0.1, callbacks=[earlystopper, checkpointer, change_lr])
+        validation_split=0.1, callbacks=[checkpointer, change_lr])
         ## self._model.load_weights("./checkpointer/" + check_file)
         return history
 
