@@ -42,8 +42,8 @@ def dice_coef(y_true, y_pred):
     return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
 
 def bce_dice_loss(y_true, y_pred):
-    return 0.5 * K.binary_crossentropy(y_true, y_pred) - dice_coef(y_true, y_pred)
-
+    # return 0.5 * K.binary_crossentropy(y_true, y_pred) - dice_coef(y_true, y_pred)
+    return -dice_coef(y_true, y_pred)
 
 '''
 DEFINE VAE_LOSS
