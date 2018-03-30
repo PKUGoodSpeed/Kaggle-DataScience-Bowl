@@ -11,6 +11,7 @@ from skimage.io import imread, imshow, imread_collection, concatenate_images, im
 from skimage.morphology import label
 from skimage.transform import resize
 from skimage import morphology
+from scipy import ndimage
 
 # Using multiprocessing
 from multiprocessing import Pool
@@ -68,7 +69,7 @@ def prob_to_rles(x, cutoff=0.5, dilation=False):
         for i in range(1, lab_img.max() + 1):    
             lab_img = np.maximum(lab_img, ndimage.morphology.binary_dilation(lab_img==i)*i)
     for i in range(1, lab_img.max() + 1):
-        img = lab_img == i
+        img = (lab_img == i)
         yield rle_encoding(img)
 
 class ImagePrec:
