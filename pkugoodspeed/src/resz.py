@@ -31,8 +31,10 @@ if __name__ == '__main__':
     ip.predict_resized(model)
     if not os.path.exists(C['output_dir']):
         os.makedirs(C['output_dir'])
-    for thred in np.arange(0.46, 0.55, 0.02):
-        sub = ip.encoding(threshold=thred, dilation=True)
-        filename = C['output_dir'] + '/subm_' + str(thred) +'.csv' 
-        sub.to_csv(filename, index=False)
+    sub = ip.encoding(threshold=0.5, dilation=True)
+    filename = C['output_dir'] + '/subm_dil.csv'
+    sub.to_csv(filename, index=False)
+    sub = ip.encoding(threshold=0.5, dilation=False)
+    filename = C['output_dir'] + '/subm_nodil.csv'
+    sub.to_csv(filename, index=False)
     

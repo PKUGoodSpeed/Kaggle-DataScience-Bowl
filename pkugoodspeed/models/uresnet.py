@@ -69,7 +69,7 @@ class UResNet:
     def get_model(self):
         return self._model
 
-    def fit(self, x, y, learning_rate=0.02, decaying_rate=0.9, epochs=2, loss='bin_cross', check_file='weights.h5'):
+    def fit(self, x, y, valid_set=None, learning_rate=0.02, decaying_rate=0.9, epochs=2, loss='bin_cross', check_file='weights.h5'):
         self._model.compile(optimizer='sgd', loss=loss_map[loss], metrics=[mean_iou, 'accuracy'])
         global global_learning_rate
         global global_decaying_rate
@@ -93,7 +93,7 @@ class UResNet:
         checkpointer = ModelCheckpoint(filepath='./checkpoints/'+check_file, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
         
         history = self._model.fit(x, y, batch_size=32, epochs=epochs, verbose=1,
-        validation_split=0.1, callbacks=[checkpointer, change_lr])
+        validation_data=valid_set, callbacks=[earlystopper, checkpointer, change_lr])
         ## self._model.load_weights("./checkpointer/" + check_file)
         return history
 
