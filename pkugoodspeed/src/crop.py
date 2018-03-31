@@ -28,6 +28,7 @@ if __name__ == '__main__':
         lr = C['fit_kargs']['learning_rate']
         dr = C['fit_kargs']['decaying_rate']
         ls = C['fit_kargs']['loss']
+        print("Starting Fold # {0} OOF ...".format(str(i)))
         for _ in range(C['fit_kargs']['epochs']):
             train_x, train_y = ip.get_batch_cropped(train_idx=train_index, expand=4)
             valid_x, valid_y = ip.get_batch_cropped(train_idx=valid_index, expand=1)
@@ -45,6 +46,7 @@ if __name__ == '__main__':
     lr = C['fit_kargs']['learning_rate']
     dr = C['fit_kargs']['decaying_rate']
     ls = C['fit_kargs']['loss']
+    print("Starting Producing test predictions ...")
     for _ in range(C['fit_kargs']['epochs']):
         train_x, train_y = ip.get_batch_cropped(train_idx=[i for i in range(n_img)], expand=4)
         if C['augment']:
