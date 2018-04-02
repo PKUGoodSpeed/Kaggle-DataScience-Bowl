@@ -30,7 +30,7 @@ if __name__ == '__main__':
         ls = C['fit_kargs']['loss']
         print("Starting Fold # {0} OOF ...".format(str(i)))
         for _ in range(C['fit_kargs']['epochs']):
-            train_x, train_y = ip.get_batch_cropped(train_idx=train_index, expand=4)
+            train_x, train_y = ip.get_batch_cropped(train_idx=train_index, expand=2)
             valid_x, valid_y = ip.get_batch_cropped(train_idx=valid_index, expand=1)
             if C['augment']:
                 train_x, train_y = ip.augment(train_x, train_y)
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     ls = C['fit_kargs']['loss']
     print("Starting Producing test predictions ...")
     for _ in range(C['fit_kargs']['epochs']):
-        train_x, train_y = ip.get_batch_cropped(train_idx=[i for i in range(n_img)], expand=4)
+        train_x, train_y = ip.get_batch_cropped(train_idx=[i for i in range(n_img)], expand=2)
         if C['augment']:
             train_x, train_y = ip.augment(train_x, train_y)
         resn.fit(x=train_x, y=train_y, valid_set=None, learning_rate=lr, decaying_rate=1., epochs=1, 
