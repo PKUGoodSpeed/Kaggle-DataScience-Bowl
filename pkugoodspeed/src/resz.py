@@ -21,9 +21,9 @@ if __name__ == '__main__':
     C = getopts()
     ip = ImagePrec(path=TRAIN_PATH, size=C['proc']['size'], channel=3, normalize=C['proc']['normalize'])
     n_img = ip.get_num()
-    # resn = ResNet(input_shape=(C['proc']['size'], C['proc']['size'], 3))
+    resn = ResNet(input_shape=(C['proc']['size'], C['proc']['size'], 3))
     # resn = UNet(input_shape=(C['proc']['size'], C['proc']['size'], 3))
-    resn = UResNet(input_shape=(C['proc']['size'], C['proc']['size'], 3))
+    # resn = UResNet(input_shape=(C['proc']['size'], C['proc']['size'], 3))
     kf = KFold(n_img, n_folds=5, random_state=414)
     for i, (train_index, valid_index) in enumerate(kf):
         resn.build_model(**C['model_kargs'])
@@ -36,16 +36,16 @@ if __name__ == '__main__':
         model = resn.get_model()
         ip.get_valid_set(valid_idx=valid_index)
         ip.predict_resized(model)
-        ip.save_predictions(path='../output/prob_map/uresnet_resz/oof')
+        ip.save_predictions(path='../output/prob_map/Resnet_resz/oof')
     
     resn.build_model(**C['model_kargs'])
     train_x, train_y = ip.get_batch_resized(train_idx=[i for i in range(n_img)])
-    resn.fit(x=train_x, y=train_y, valid_set=None, check_file='resz_weights_test.h5', **C['fit_kargs'])
+    resn.fit(x=train_x, y=train_y, valid_set=None, check_file='resz_resnet_weights_test.h5', **C['fit_kargs'])
     model = resn.get_model()
     
     ip.get_test_set(path=TEST_PATH, normalize=C['proc']['normalize'])
     ip.predict_resized(model)
-    ip.save_predictions(path='../output/prob_map/uresnet_resz/test_pred')
+    ip.save_predictions(path='../output/prob_map/Resnet_resz/test_pred')
     if not os.path.exists(C['output_dir']):
         os.makedirs(C['output_dir'])
     sub = ip.encoding(threshold=0.5, dilation=False)
