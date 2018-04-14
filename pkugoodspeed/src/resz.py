@@ -21,8 +21,8 @@ if __name__ == '__main__':
     C = getopts()
     ip = ImagePrec(path=TRAIN_PATH, size=C['proc']['size'], channel=3, normalize=C['proc']['normalize'])
     n_img = ip.get_num()
-    # resn = ResNet(input_shape=(C['proc']['size'], C['proc']['size'], 3))
-    resn = UNet(input_shape=(C['proc']['size'], C['proc']['size'], 3))
+    resn = ResNet(input_shape=(C['proc']['size'], C['proc']['size'], 3))
+    # resn = UNet(input_shape=(C['proc']['size'], C['proc']['size'], 3))
     # resn = UResNet(input_shape=(C['proc']['size'], C['proc']['size'], 3))
     resn.build_model(**C['model_kargs'])
     
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     
     ip.get_test_set(path=TEST_PATH, normalize=C['proc']['normalize'])
     ip.predict_resized(model)
-    ip.save_predictions(path='../output/prob_map/unet_resz/test_pred')
+    ip.save_predictions(path='../output/prob_map/RES/test_pred')
     if not os.path.exists(C['output_dir']):
         os.makedirs(C['output_dir'])
     thres = [0.50, 0.525, 0.55, 0.575, 0.60]
