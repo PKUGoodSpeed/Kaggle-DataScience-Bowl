@@ -4,8 +4,8 @@ from keras.models import Model
 from keras.optimizers import SGD, Adam
 from keras.callbacks import LearningRateScheduler, Callback, EarlyStopping, ModelCheckpoint
 from keras.layers import Input, Conv2D, Conv2DTranspose, Activation, Dropout, Reshape
-from keras.layers import MaxPooling2D, AveragePooling2D, concatenate
-from keras.layers.core import Lambda
+from keras.layers import MaxPooling2D, AveragePooling2D, concatenate, Add
+from keras.layers import BatchNormalization, merge
 from model_utils import *
 
 
@@ -21,8 +21,7 @@ class UResNet:
         self._input_shape = input_shape
         self._output_shape = input_shape[:2]
     
-    def build_model(self, init_channel=16, depth=4, 
-    kernel_size=3, initial_dropout=0.1, activation='relu', smooth=3):
+    def build_model(self, init_channel=16, depth=4, res_num=3):
         in_layer = Input(self._input_shape)
         k_size = kernel_size
         n_channel = init_channel

@@ -4,8 +4,7 @@ from keras.models import Model
 from keras.optimizers import SGD, Adam
 from keras.callbacks import LearningRateScheduler, Callback, EarlyStopping, ModelCheckpoint
 from keras.layers import Input, Conv2D, Conv2DTranspose, Activation, Dropout, Reshape
-from keras.layers import MaxPooling2D, AveragePooling2D, concatenate
-from keras.layers.core import Lambda
+from keras.layers import MaxPooling2D, AveragePooling2D, concatenate, BatchNormalization
 from model_utils import *
 
 
@@ -27,37 +26,35 @@ class UNet:
         k_size = kernel_size
         n_channel = init_channel
         dropout_ratio = initial_dropout
-        tmp = in_layer
+        tmp = BatchNormalization(axis=-1) (in_layer)
         conv = []
         drops = []
         for i in range(depth):
-            tmp = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation,
-            kernel_initializer='he_normal', strides=1, padding="same") (tmp)
+            tmp = Conv2D(filters=n_channel, kernel_size=k_size, kernel_initializer='he_normal', strides=1, padding="same") (tmp)
+            tmp = Activation(activation) (BatchNormalization(axis=-1) (tmp))
             tmp = Dropout(dropout_ratio) (tmp)
-            tmp = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation,
-            kernel_initializer='he_normal', strides=1, padding="same") (tmp)
+            tmp = Conv2D(filters=n_channel, kernel_size=k_size, kernel_initializer='he_normal', strides=1, padding="same") (tmp)
+            tmp = Activation(activation) (BatchNormalization(axis=-1) (tmp))
             tmp = Dropout(dropout_ratio) (tmp)
             if i < depth-1:
                 drops.append(dropout_ratio)
-                dropout_ratio = min(dropout_ratio*1.7, 0.4)
+                dropout_ratio = min(dropout_ratio*1.7, 0.42)
                 conv.append(tmp)
                 tmp = MaxPooling2D((2, 2)) (tmp)
                 n_channel *= 2
         
         for i in range(1, depth):
             n_channel /= 2
-            tmp = Conv2DTranspose(filters=n_channel, kernel_size=(2, 2), strides=(2, 2),
-            padding="same") (tmp)
+            tmp = Conv2DTranspose(filters=n_channel, kernel_size=(2, 2), strides=(2, 2), padding="same") (tmp)
             tmp = concatenate([tmp, conv[-i]])
-            tmp = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation,
-            kernel_initializer='he_normal', strides=1, padding="same") (tmp)
+            tmp = Conv2D(filters=n_channel, kernel_size=k_size, kernel_initializer='he_normal', strides=1, padding="same") (tmp)
+            tmp = Activation(activation) (BatchNormalization(axis=-1) (tmp))
             tmp = Dropout(drops[-i]) (tmp)
-            tmp = Conv2D(filters=n_channel, kernel_size=k_size, activation=activation,
-            kernel_initializer='he_normal', strides=1, padding="same") (tmp)
+            tmp = Conv2D(filters=n_channel, kernel_size=k_size, kernel_initializer='he_normal', strides=1, padding="same") (tmp)
+            tmp = Activation(activation) (BatchNormalization(axis=-1) (tmp))
             tmp = Dropout(drops[-i]) (tmp)
         
-        out_layer = Conv2D(filters=1, kernel_size=smooth, activation='sigmoid', 
-        strides=1, padding="same") (tmp)
+        out_layer = Conv2D(filters=1, kernel_size=smooth, activation='sigmoid', strides=1, padding="same") (tmp)
         out_layer = Reshape(self._output_shape) (out_layer)
 
         # construct model
@@ -77,18 +74,19 @@ class UNet:
         def scheduler(epoch):
             global global_learning_rate
             global global_decaying_rate
-            global_learning_rate *= global_decaying_rate
-            print("CURRENT LEARNING RATE = " + str(global_learning_rate))
+            if epoch % 4 == 0:
+                global_learning_rate *= global_decaying_rate
+                print("CURRENT LEARNING RATE = " + str(global_learning_rate))
             return global_learning_rate
         change_lr = LearningRateScheduler(scheduler)
         
         ## Set early stopper:
-        earlystopper = EarlyStopping(monitor='val_loss', patience=5, verbose=1, mode='auto')
+        earlystopper = EarlyStopping(monitor='val_mean_iou', patience=5, verbose=1, mode='max')
         
         ## Set Check point
         if not os.path.exists('./checkpoints'):
             os.system('mkdir checkpoints')
-        checkpointer = ModelCheckpoint(filepath='./checkpoints/'+check_file, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+        checkpointer = ModelCheckpoint(filepath='./checkpoints/'+check_file, monitor='val_mean_iou', verbose=1, save_best_only=True, mode='max')
         
         history = self._model.fit(x, y, batch_size=32, epochs=epochs, verbose=1,
         validation_data=valid_set, callbacks=[checkpointer, change_lr])

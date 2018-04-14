@@ -187,7 +187,16 @@ class ImagePrec:
             img_file_list = os.listdir('{0}/{1}/images'.format(path, img_id))
             assert len(img_file_list) == 1, "Multiple images found in one images id folder."
             assert img_file_list[0] == img_id + '.png', "Image id and image name do not match."
-            img = imread('{0}/{1}/images/{1}.png'.format(path, img_id, img_id))[:, :, :self._channel]
+            img = imread('{0}/{1}/images/{1}.png'.format(path, img_id, img_id))
+            w, h = img.shape[:2]
+            if len(img.shape) < self._channel:
+                img_ = np.zeros((w, h, self._channel))
+                for i in range(self._channel):
+                    img_[:, :, i] = img
+                img = img_
+            else:
+                img = img[:, :, : self._channel]
+            assert img.shape[2] == self._channel, "Shape Error!!"
             ## Do normalization
             if normalize == 1:
                 img = (img.astype(np.float32) - img.mean())/max(1., img.std())
