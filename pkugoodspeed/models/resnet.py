@@ -78,12 +78,12 @@ class ResNet:
         change_lr = LearningRateScheduler(scheduler)
         
         ## Set early stopper:
-        earlystopper = EarlyStopping(monitor='val_acc', patience=5, verbose=1, mode='auto')
+        earlystopper = EarlyStopping(monitor='val_mean_iou', patience=5, verbose=1, mode='max')
         
         ## Set Check point
         if not os.path.exists('./checkpoints'):
             os.system('mkdir checkpoints')
-        checkpointer = ModelCheckpoint(filepath='./checkpoints/'+check_file, monitor='val_acc', verbose=1, save_best_only=True, mode='auto')
+        checkpointer = ModelCheckpoint(filepath='./checkpoints/'+check_file, monitor='val_mean_iou', verbose=1, save_best_only=True, mode='max')
         
         history = self._model.fit(x, y, batch_size=8, epochs=epochs, verbose=1,
         validation_data=valid_set, callbacks=[earlystopper, checkpointer, change_lr])
